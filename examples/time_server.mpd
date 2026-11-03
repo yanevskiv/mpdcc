@@ -1,0 +1,33 @@
+# The slides' time server: Timer serves gettime, delay and tick; a call of
+# delay waits until the time of day reaches its argument.
+
+const int SLEEPERS = 3;
+
+Module TimeServer
+    op gettime() returns int;
+    op delay(int);
+    op tick();
+Body
+    Process Timer {
+        int tod = 0;
+        while (true) {
+            in gettime() returns time -> time = tod;
+            [] delay(waketime) and waketime <= tod -> skip;
+            [] tick() -> tod++;
+            ni
+        }
+    }
+End TimeServer;
+
+process Clock {
+    for [t = 1 to 30] {
+        nap(10);
+        send TimeServer.tick();
+    }
+}
+
+process Sleeper[i = 1 to SLEEPERS] {
+    int now = TimeServer.gettime();
+    call TimeServer.delay(now + 5 * i);
+    write("sleeper", i, "woke at", TimeServer.gettime());
+}

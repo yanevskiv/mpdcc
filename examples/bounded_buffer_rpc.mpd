@@ -1,0 +1,40 @@
+# The slides' bounded buffer with RPC: each call runs deposit or fetch,
+# which guard the buffer with semaphores.
+
+const int n = 5;
+const int ITEMS = 20;
+type elem = int;
+
+Module BoundedBuffer
+    op deposit(elem);
+    op fetch() returns elem;
+Body
+    elem buf[n];
+    int front = 0, rear = 0;
+    sem empty = n, full = 0, mutexD = 1, mutexF = 1;
+
+    Process deposit(item) {
+        wait(empty); wait(mutexD);
+        buf[rear] = item; rear = (rear + 1) % n;
+        signal(mutexD); signal(full);
+    }
+
+    Process fetch() returns item {
+        wait(full); wait(mutexF);
+        item = buf[front]; front = (front + 1) % n;
+        signal(mutexF); signal(empty);
+    }
+End BoundedBuffer;
+
+process Producer {
+    for [i = 1 to ITEMS] {
+        call BoundedBuffer.deposit(i);
+    }
+}
+
+process Consumer {
+    for [i = 1 to ITEMS] {
+        elem item = BoundedBuffer.fetch();
+        write("fetched", item);
+    }
+}

@@ -1,0 +1,36 @@
+# The slides' bounded buffer with rendezvous: the process Buffer serves
+# deposit and fetch with an in statement, each arm guarded by and.
+
+const int n = 5;
+const int ITEMS = 20;
+type elem = int;
+
+Module BoundedBuffer
+    op deposit(elem);
+    op fetch(result elem);
+Body
+    Process Buffer {
+        elem buf[n]; int front = 0, rear = 0, count = 0;
+        while (true) {
+            in deposit(item) and count < n ->
+                    buf[rear] = item; count++; rear = (rear + 1) % n;
+            [] fetch(item) and count > 0 ->
+                    item = buf[front]; count--; front = (front + 1) % n;
+            ni
+        }
+    }
+End BoundedBuffer;
+
+process Producer {
+    for [i = 1 to ITEMS] {
+        call BoundedBuffer.deposit(i);
+    }
+}
+
+process Consumer {
+    for [i = 1 to ITEMS] {
+        elem item;
+        call BoundedBuffer.fetch(item);
+        write("fetched", item);
+    }
+}
