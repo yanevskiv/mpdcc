@@ -1,0 +1,43 @@
+# Readers and writers: ?startRead and ?startWrite count who waits. After a
+# writer, the readers waiting go first; after them, the next writer.
+
+const int NR = 4;
+const int NW = 2;
+
+Module RW
+    op startRead();
+    op endRead();
+    op startWrite();
+    op endWrite();
+Body
+    Process Server {
+        int readers = 0;
+        bool writing = false, readersTurn = false;
+        while (true) {
+            in startRead() and !writing && (?startWrite == 0 || readersTurn) ->
+                    readers++;
+                    if (?startRead == 0) readersTurn = false;
+            [] endRead() -> readers--;
+            [] startWrite() and !writing && readers == 0 && (?startRead == 0 || !readersTurn) ->
+                    writing = true;
+            [] endWrite() -> writing = false; readersTurn = true;
+            ni
+        }
+    }
+End RW;
+
+process Reader[i = 1 to NR] {
+    for [round = 1 to 3] {
+        call RW.startRead();
+        reading(i);
+        call RW.endRead();
+    }
+}
+
+process Writer[i = 1 to NW] {
+    for [round = 1 to 3] {
+        call RW.startWrite();
+        writing(i);
+        call RW.endWrite();
+    }
+}

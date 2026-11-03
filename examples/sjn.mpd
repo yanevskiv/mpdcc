@@ -1,0 +1,27 @@
+# Shortest job next: by length serves the waiting request with the
+# shortest job first.
+
+const int N = 5;
+
+Module SJN
+    op request(int id, int length);
+    op release();
+Body
+    Process Server {
+        bool busy = false;
+        while (true) {
+            in request(id, length) and !busy by length -> busy = true;
+            [] release() -> busy = false;
+            ni
+        }
+    }
+End SJN;
+
+process P[i = 1 to N] {
+    for [round = 1 to 4] {
+        int length = random(10) + 1;
+        call SJN.request(i, length);
+        work(i, length);
+        call SJN.release();
+    }
+}

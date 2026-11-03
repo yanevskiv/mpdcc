@@ -1,0 +1,30 @@
+# RPC creates a process for each invocation: every send of work starts a
+# new process running the proc, while call runs it and waits.
+
+const int JOBS = 4;
+
+Module Workers
+    op work(int job);
+    op square(int x) returns int;
+Body
+    sem finished = 0;
+
+    proc work(job) {
+        write("job", job, "squared is", square(job));
+        V(finished);
+    }
+
+    proc square(x) returns result {
+        result = x * x;
+    }
+
+    Process Boss {
+        for [job = 1 to JOBS] {
+            send work(job);
+        }
+        for [job = 1 to JOBS] {
+            P(finished);
+        }
+        write("all jobs finished");
+    }
+End Workers;

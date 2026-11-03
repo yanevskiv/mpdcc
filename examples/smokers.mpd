@@ -1,0 +1,22 @@
+# Cigarette smokers: the agent sends the item it leaves out, and each
+# smoker's guard takes only the message meant for the smoker who has it.
+
+const int ROUNDS = 6;
+
+op table(int missing);
+op done();
+
+process Agent {
+    for [round = 1 to ROUNDS] {
+        send table(random(3));
+        receive done();
+    }
+}
+
+process Smoker[i = 0 to 2] {
+    while (true) {
+        in table(missing) and missing == i -> skip; ni
+        smoke(i);
+        send done();
+    }
+}

@@ -1,0 +1,43 @@
+# The slides' Merge filter with asynchronous messages: send never waits,
+# and receive takes the oldest message of its op.
+
+const int EOS = -1;
+
+op in1(int value);
+op in2(int value);
+op out(int value);
+
+process Source1 {
+    for [k = 1 to 5] {
+        send in1(2 * k);
+    }
+    send in1(EOS);
+}
+
+process Source2 {
+    for [k = 1 to 5] {
+        send in2(3 * k);
+    }
+    send in2(EOS);
+}
+
+process Merge {
+    int v1, v2;
+    receive in1(v1); receive in2(v2);
+    while (v1 != EOS && v2 != EOS) {
+        if (v1 <= v2) { send out(v1); receive in1(v1); }
+        else { send out(v2); receive in2(v2); }
+    }
+    while (v1 != EOS) { send out(v1); receive in1(v1); }
+    while (v2 != EOS) { send out(v2); receive in2(v2); }
+    send out(EOS);
+}
+
+process Sink {
+    int v = 0;
+    receive out(v);
+    while (v != EOS) {
+        write(v);
+        receive out(v);
+    }
+}

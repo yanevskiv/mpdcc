@@ -1,0 +1,29 @@
+# Dining philosophers with a waiter: the guard of take uses the call's own
+# argument, so a philosopher gets both forks at once or waits.
+
+const int N = 5;
+
+Module Waiter
+    op take(int id);
+    op release(int id);
+Body
+    Process Table {
+        bool free[N] = true;
+        while (true) {
+            in take(id) and free[id] && free[(id + 1) % N] ->
+                    free[id] = false; free[(id + 1) % N] = false;
+            [] release(id) ->
+                    free[id] = true; free[(id + 1) % N] = true;
+            ni
+        }
+    }
+End Waiter;
+
+process Phil[i = 0 to N - 1] {
+    for [round = 1 to 3] {
+        think(i);
+        call Waiter.take(i);
+        eat(i);
+        call Waiter.release(i);
+    }
+}

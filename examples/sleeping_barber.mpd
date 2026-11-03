@@ -1,0 +1,37 @@
+# The sleeping barber: the barber sleeps in his in statement until a
+# customer enters; a customer who finds every chair taken leaves.
+
+const int N = 5;
+const int CHAIRS = 2;
+
+Module Shop
+    op enter(res bool seated);
+    op haircut(int id);
+Body
+    Process Barber {
+        int waiting = 0;
+        while (true) {
+            in enter(seated) ->
+                    seated = waiting < CHAIRS;
+                    if (seated) waiting++;
+            [] haircut(id) ->
+                    waiting--;
+                    cut_hair(id);
+            ni
+        }
+    }
+End Shop;
+
+process Customer[i = 1 to N] {
+    for [visit = 1 to 3] {
+        bool seated;
+        call Shop.enter(seated);
+        if (seated) {
+            call Shop.haircut(i);
+            pay(i);
+        } else {
+            leave(i);
+        }
+        nap(20);
+    }
+}
